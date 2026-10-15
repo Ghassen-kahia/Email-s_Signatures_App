@@ -10,6 +10,7 @@ import {
   inlineLinks,
   link,
   logoImage,
+  logoRow,
   socialLinks,
   spacer,
   table,
@@ -45,6 +46,7 @@ function nameBlock(m: SignatureModel, nameColor: string, opts: { uppercase?: boo
 
 function socialRow(m: SignatureModel, color: string): string {
   if (!m.socials.length) return '';
+  if (m.iconBase) return spacer(6) + tr(td(socialLinks(m, color), {}, { align: m.alignment }));
   return tr(td(socialLinks(m, color), textStyle(m.style, { 'font-size': `${m.style.smallSize}px` }), { align: m.alignment }));
 }
 
@@ -86,13 +88,15 @@ const minimal: Template = (m) => {
   const body = table(
     nameBlock(m, s.primary) +
       (m.separator !== 'none' ? spacer(Math.round(s.gap / 2)) + hSeparator(m, '64px') + spacer(Math.round(s.gap / 2)) : spacer(s.gap / 2)) +
-      (contacts.length
-        ? tr(td(inlineLinks(contacts, s, s.text, s.accent, false), textStyle(s, { 'font-size': `${s.smallSize}px` }), { align: m.alignment }))
-        : '') +
-      socialRow(m, s.accent) +
+      (m.iconBase
+        ? contactRows(m, s.text)
+        : contacts.length
+          ? tr(td(inlineLinks(contacts, s, s.text, s.accent, false), textStyle(s, { 'font-size': `${s.smallSize}px` }), { align: m.alignment }))
+          : '') +
       addressRow(m) +
+      socialRow(m, s.accent) +
       ctaRow(m, m.cta ? link(m.cta, s.accent, s, `${m.cta.text}&nbsp;&rarr;`, { 'font-weight': 'bold', 'font-size': `${s.smallSize}px` }) : '') +
-      (m.logo ? spacer(s.gap) + tr(td(logoImage(m.logo, s), {}, { align: m.alignment })) : ''),
+      (m.logos.length ? spacer(s.gap) + tr(td(logoRow(m), {}, { align: m.alignment })) : ''),
   );
   return withPhoto(m, body, '');
 };
@@ -112,10 +116,10 @@ const tech: Template = (m) => {
     nameBlock(m, s.primary) +
       spacer(Math.round(s.gap / 2)) +
       contactRows(m, s.text) +
-      (m.socials.length ? spacer(Math.round(s.gap / 2)) + socialRow(m, s.accent) : '') +
       addressRow(m) +
+      (m.socials.length ? spacer(Math.round(s.gap / 2)) + socialRow(m, s.accent) : '') +
       ctaRow(m, ctaButton(m, s.primary, '#ffffff')) +
-      (m.logo ? spacer(s.gap) + tr(td(logoImage(m.logo, s), {}, { align: m.alignment })) : ''),
+      (m.logos.length ? spacer(s.gap) + tr(td(logoRow(m), {}, { align: m.alignment })) : ''),
   );
   const content = m.alignment === 'center' && m.separator !== 'none' ? table(hSeparator(m) + tr(td(body, { 'padding-top': `${s.gap}px` }))) : body;
   return withPhoto(m, content, m.alignment === 'center' ? '' : divider);
@@ -128,13 +132,13 @@ const corporate: Template = (m) => {
   const centered = m.alignment === 'center';
 
   let middle: string;
-  if (m.logo && !centered) {
+  if (m.logos.length && !centered) {
     middle = tr(td(table(tr(
-      td(logoImage(m.logo, s), { 'padding-right': `${s.gap}px`, 'vertical-align': 'middle', 'border-right': `1px solid ${s.muted}` }, { valign: 'middle' }) +
+      td(table(m.logos.map((l, i) => tr(td(logoImage(l, s), { 'padding-top': i ? `${s.gap / 2}px` : undefined }))).join('')), { 'padding-right': `${s.gap}px`, 'vertical-align': 'middle', 'border-right': `1px solid ${s.muted}` }, { valign: 'middle' }) +
         td(contacts, { 'padding-left': `${s.gap}px`, 'vertical-align': 'middle' }, { valign: 'middle' }),
     ))));
   } else {
-    middle = (m.logo ? tr(td(logoImage(m.logo, s), { 'padding-bottom': `${s.gap / 2}px` }, { align: m.alignment })) : '') + tr(td(contacts, {}, { align: m.alignment }));
+    middle = (m.logos.length ? tr(td(logoRow(m), { 'padding-bottom': `${s.gap / 2}px` }, { align: m.alignment })) : '') + tr(td(contacts, {}, { align: m.alignment }));
   }
 
   const inner = table(
@@ -164,12 +168,16 @@ const creative: Template = (m) => {
   const body = table(
     tr(td(banner)) +
       spacer(Math.round(s.gap * 0.8)) +
-      (contacts.length ? tr(td(inlineLinks(contacts, s, s.text, s.accent, m.showLinkLabels), textStyle(s, { 'font-size': `${s.smallSize}px` }), { align: m.alignment })) : '') +
+      (m.iconBase
+        ? contactRows(m, s.text)
+        : contacts.length
+          ? tr(td(inlineLinks(contacts, s, s.text, s.accent, m.showLinkLabels), textStyle(s, { 'font-size': `${s.smallSize}px` }), { align: m.alignment }))
+          : '') +
+      addressRow(m) +
       (m.separator !== 'none' && m.socials.length ? hSeparator({ ...m, separator: m.separator === 'line' ? 'dot' : m.separator }) : '') +
       socialRow(m, s.accent) +
-      addressRow(m) +
       ctaRow(m, ctaButton(m, s.accent, '#ffffff', true)) +
-      (m.logo ? spacer(s.gap) + tr(td(logoImage(m.logo, s), {}, { align: m.alignment })) : ''),
+      (m.logos.length ? spacer(s.gap) + tr(td(logoRow(m), {}, { align: m.alignment })) : ''),
     { width: '100%' },
   );
   return withPhoto(m, body, '');

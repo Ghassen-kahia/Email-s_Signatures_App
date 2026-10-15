@@ -17,9 +17,7 @@ interface Props {
 export function ExportPanel({ state, exportHtml, blocked, onOptionsChange, notify }: Props) {
   const [showSource, setShowSource] = useState(false);
   const checks = useMemo(() => checkCompatibility(exportHtml), [exportHtml]);
-  const images = imageExportStatus(state);
-  const omitted = (['photo', 'logo'] as const).filter((k) => images[k].omittedLocal);
-  const embedded = (['photo', 'logo'] as const).filter((k) => images[k].embeddedLocal);
+  const { omitted, embedded } = imageExportStatus(state);
 
   async function run(action: () => Promise<void> | void, success: string) {
     try {
@@ -66,14 +64,14 @@ export function ExportPanel({ state, exportHtml, blocked, onOptionsChange, notif
         </p>
 
         <div className="mt-5 space-y-3">
-          {omitted.length > 0 && (
-            <Callout tone="warn" title={`Your ${omitted.join(' and ')} won’t appear for recipients`}>
+          {omitted > 0 && (
+            <Callout tone="warn" title={`${omitted} image${omitted > 1 ? 's' : ''} won’t appear for recipients`}>
               Uploaded images live only in this browser. Email recipients load signature images from the internet, so each image needs a public{' '}
-              <code className="font-mono">https://</code> URL. Host the file (your website, a CDN, a public cloud bucket) and paste its direct link in
-              the Profile tab’s “Hosted image URL” field. Until then the image is left out of the export.
+              <code className="font-mono">https://</code> URL. In the Profile tab, press “Host on GitHub” (when running <code>npm run dev</code>) or paste a
+              hosted link. Until then the image is left out of the export.
             </Callout>
           )}
-          {embedded.length > 0 && (
+          {embedded > 0 && (
             <Callout tone="warn" title="Embedded images are unreliable">
               Gmail strips embedded (base64) images and Outlook often turns them into attachments. They also inflate the signature past Gmail’s
               10,000-character limit. Prefer a hosted URL.

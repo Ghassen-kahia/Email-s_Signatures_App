@@ -40,10 +40,10 @@ export function validateProfile(profile: Profile): FieldErrors {
     errors.ctaUrl = 'A call-to-action needs a link.';
   }
 
-  for (const key of ['photo', 'logo'] as const) {
-    const hosted = profile[key].hostedUrl.trim();
+  for (const img of [...profile.photos, ...profile.logos]) {
+    const hosted = img.hostedUrl.trim();
     if (hosted && !isHttpsUrl(hosted)) {
-      errors[`${key}.hostedUrl`] = 'Hosted images must use an absolute https:// URL so recipients can load them.';
+      errors[`image.${img.id}`] = 'Hosted images must use an absolute https:// URL so recipients can load them.';
     }
   }
 

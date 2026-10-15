@@ -142,7 +142,15 @@ export function DesignPanel({ state, onChange }: Props) {
           <Range label="Photo size" value={d.photoSize} min={48} max={120} step={4} onChange={(photoSize) => onChange({ photoSize })} />
           <div className="space-y-4 border-t border-ink-700/60 pt-4">
             <Toggle label="Round photo" description="Outlook for Windows ignores rounding and shows a square." checked={d.photoRounded} onChange={(photoRounded) => onChange({ photoRounded })} />
-            <Toggle label="Contact labels" description="Prefix email, phone and website with a short label." checked={d.showLinkLabels} onChange={(showLinkLabels) => onChange({ showLinkLabels })} />
+            <Toggle
+              label="Icons"
+              description="Phone, email, website and address get an icon; LinkedIn, GitHub and portfolio become icon buttons in your accent colour."
+              checked={d.linkIcons}
+              onChange={(linkIcons) => onChange({ linkIcons })}
+            />
+            {!d.linkIcons && (
+              <Toggle label="Contact labels" description="Prefix email, phone and website with a short label." checked={d.showLinkLabels} onChange={(showLinkLabels) => onChange({ showLinkLabels })} />
+            )}
           </div>
         </div>
       </Section>

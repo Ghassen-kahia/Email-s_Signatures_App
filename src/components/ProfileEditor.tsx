@@ -1,4 +1,6 @@
+import { useCallback, useEffect, useState } from 'react';
 import type { FieldErrors, Profile } from '../types';
+import { pendingCount, publishImages } from '../lib/hosting';
 import { ImageField } from './ImageField';
 import { Field, Section } from './ui';
 
@@ -10,6 +12,8 @@ interface Props {
 
 export function ProfileEditor({ profile: p, errors, onChange }: Props) {
   const text = (key: keyof Profile) => (value: string) => onChange({ [key]: value });
+  const hosting = useHosting();
+  const imageProps = { errors, canHost: hosting.available, onHosted: hosting.refresh, checkVersion: hosting.version };
 
   return (
     <div className="space-y-5">
@@ -45,12 +49,72 @@ export function ProfileEditor({ profile: p, errors, onChange }: Props) {
         </div>
       </Section>
 
-      <Section kicker="05 · Images" title="Photo & logo" description="Uploads are processed in your browser and never transmitted.">
+      <Section
+        kicker="05 · Images"
+        title="Photos & logos"
+        description={
+          hosting.available
+            ? 'Uploads are resized in your browser and saved into this project’s public/hosted folder. Publishing pushes them to your public GitHub repo so recipients can see them.'
+            : 'Uploads are resized in your browser and never transmitted. Recipients need a public link for each image.'
+        }
+      >
         <div className="grid gap-4">
-          <ImageField label="Profile photo" kind="photo" value={p.photo} onChange={(photo) => onChange({ photo })} hostedError={errors['photo.hostedUrl']} />
-          <ImageField label="Logo" kind="logo" value={p.logo} onChange={(logo) => onChange({ logo })} hostedError={errors['logo.hostedUrl']} />
+          <ImageField
+            label="Profile photo"
+            kind="photo"
+            items={p.photos}
+            onChange={(photos) => onChange({ photos })}
+            active={p.activePhoto}
+            onActiveChange={(activePhoto) => onChange({ activePhoto })}
+            {...imageProps}
+          />
+          <ImageField label="Logos" kind="logo" items={p.logos} onChange={(logos) => onChange({ logos })} {...imageProps} />
+          {hosting.available && (hosting.pending > 0 || hosting.error) && (
+            <div className="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-amber-400/40 bg-amber-400/5 p-4">
+              <div className="min-w-0">
+                <p className="text-sm font-medium text-amber-200">
+                  {hosting.pending > 0 ? `${hosting.pending} image${hosting.pending > 1 ? 's' : ''} not public yet` : 'Publishing failed'}
+                </p>
+                <p className="text-xs text-ink-400">
+                  {hosting.error ? <span className="whitespace-pre-wrap text-rose-300">{hosting.error}</span> : 'Commits public/hosted and pushes it to GitHub. Anyone can view files in a public repo.'}
+                </p>
+              </div>
+              <button type="button" className="btn btn-primary text-xs" onClick={hosting.publish} disabled={hosting.publishing}>
+                {hosting.publishing ? 'Publishing…' : 'Publish to GitHub'}
+              </button>
+            </div>
+          )}
         </div>
       </Section>
     </div>
   );
+}
+
+/** State of the dev server's GitHub image hosting (see hosting-plugin.ts). */
+function useHosting() {
+  const [pending, setPending] = useState<number | null>(null);
+  const [publishing, setPublishing] = useState(false);
+  const [error, setError] = useState('');
+  const [version, setVersion] = useState(0);
+
+  const refresh = useCallback(() => {
+    pendingCount().then(setPending);
+  }, []);
+  useEffect(refresh, [refresh]);
+
+  async function publish() {
+    setPublishing(true);
+    setError('');
+    try {
+      setPending(await publishImages());
+      // Re-run the link checks now that the files are public.
+      setVersion(Date.now());
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Publishing failed');
+    } finally {
+      setPublishing(false);
+    }
+  }
+
+  return { available: pending !== null, pending: pending ?? 0, publishing, error, publish, refresh, version };
 }

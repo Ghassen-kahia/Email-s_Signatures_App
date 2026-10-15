@@ -90,3 +90,37 @@ export function displayUrl(url: string): string {
 export function safeColor(value: string, fallback: string): string {
   return /^#([0-9a-f]{3}|[0-9a-f]{6})$/i.test(value) ? value : fallback;
 }
+
+/**
+ * Turn a "share" link from a common file host into a direct link to the image
+ * itself. Share links open a web page, which email clients can't show as an
+ * image. Returns the input unchanged when no rule applies.
+ */
+export function toDirectImageUrl(raw: string): string {
+  const value = raw.trim();
+  let url: URL;
+  try {
+    url = new URL(value);
+  } catch {
+    return raw;
+  }
+  const host = url.hostname.replace(/^www\./, '');
+
+  // Google Drive: /file/d/<id>/view, /open?id=<id>, /uc?id=<id>
+  if (host === 'drive.google.com') {
+    const id = /\/file\/d\/([\w-]+)/.exec(url.pathname)?.[1] ?? url.searchParams.get('id');
+    if (id && /^[\w-]+$/.test(id)) return `https://lh3.googleusercontent.com/d/${id}`;
+  }
+  // Dropbox: ?dl=0 opens a preview page, ?raw=1 serves the file.
+  if (host === 'dropbox.com') {
+    url.searchParams.delete('dl');
+    url.searchParams.set('raw', '1');
+    return url.toString();
+  }
+  // GitHub: /<user>/<repo>/blob/<ref>/<path> → jsDelivr (correct image headers, CDN cached).
+  if (host === 'github.com') {
+    const m = /^\/([^/]+)\/([^/]+)\/(?:blob|raw)\/([^/]+)\/(.+)$/.exec(url.pathname);
+    if (m) return `https://cdn.jsdelivr.net/gh/${m[1]}/${m[2]}@${m[3]}/${m[4]}`;
+  }
+  return raw;
+}

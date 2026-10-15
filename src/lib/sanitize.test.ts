@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { cleanText, escapeHtml, isHttpsUrl, isValidEmail, isValidPhone, mailtoHref, normalizeWebUrl, safeColor, telHref } from './sanitize';
+import { cleanText, escapeHtml, isHttpsUrl, isValidEmail, isValidPhone, mailtoHref, normalizeWebUrl, safeColor, telHref, toDirectImageUrl } from './sanitize';
 
 describe('escapeHtml', () => {
   it('escapes markup characters', () => {
@@ -61,5 +61,22 @@ describe('safeColor', () => {
   it('only allows hex colours', () => {
     expect(safeColor('#0aF', '#000')).toBe('#0aF');
     expect(safeColor('red;background:url(x)', '#000')).toBe('#000');
+  });
+});
+
+describe('toDirectImageUrl', () => {
+  it('converts Google Drive share links', () => {
+    expect(toDirectImageUrl('https://drive.google.com/file/d/1AbC-d_9/view?usp=sharing')).toBe('https://lh3.googleusercontent.com/d/1AbC-d_9');
+    expect(toDirectImageUrl('https://drive.google.com/open?id=1AbC')).toBe('https://lh3.googleusercontent.com/d/1AbC');
+  });
+
+  it('converts Dropbox and GitHub links', () => {
+    expect(toDirectImageUrl('https://www.dropbox.com/scl/fi/abc/me.jpg?rlkey=xyz&dl=0')).toBe('https://www.dropbox.com/scl/fi/abc/me.jpg?rlkey=xyz&raw=1');
+    expect(toDirectImageUrl('https://github.com/u/repo/blob/main/img/me.png')).toBe('https://cdn.jsdelivr.net/gh/u/repo@main/img/me.png');
+  });
+
+  it('leaves other values alone', () => {
+    expect(toDirectImageUrl('https://cdn.example.com/me.jpg')).toBe('https://cdn.example.com/me.jpg');
+    expect(toDirectImageUrl('not a url')).toBe('not a url');
   });
 });

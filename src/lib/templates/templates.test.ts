@@ -88,16 +88,18 @@ describe('escaping', () => {
 });
 
 describe('images', () => {
-  const withLocal = (hostedUrl = '') => stateFor('tech', { photo: { hostedUrl, localDataUrl: LOCAL_IMG } });
+  const withLocal = (hostedUrl = '') => stateFor('tech', { photos: [{ id: 'p', hostedUrl, localDataUrl: LOCAL_IMG }] });
 
   it('shows local uploads in preview but omits them from export', () => {
     expect(renderSignature(withLocal(), 'preview')).toContain(LOCAL_IMG);
-    expect(renderSignature(withLocal(), 'export')).not.toContain('<img');
+    const exported = parse(renderSignature(withLocal(), 'export'));
+    expect(exported.querySelector('img[alt^="Photo of"]')).toBeNull();
+    expect(exported.body.innerHTML).not.toContain(LOCAL_IMG);
   });
 
   it('prefers the hosted https URL in export, with alt text and dimensions', () => {
     const html = renderSignature(withLocal('https://cdn.example.com/ada.jpg'), 'export');
-    const img = parse(html).querySelector('img')!;
+    const img = parse(html).querySelector('img[alt^="Photo of"]')!;
     expect(img.getAttribute('src')).toBe('https://cdn.example.com/ada.jpg');
     expect(img.getAttribute('alt')).toContain('Ada Moreau');
     expect(img.getAttribute('width')).toBeTruthy();
@@ -109,6 +111,49 @@ describe('images', () => {
     const html = renderSignature({ ...s, exportOptions: { embedLocalImages: true } }, 'export');
     expect(html).toContain(LOCAL_IMG);
     expect(checkCompatibility(html).some((c) => c.id === 'data-uri')).toBe(true);
+  });
+});
+
+describe('multiple images', () => {
+  const img = (id: string) => ({ id, hostedUrl: `https://cdn.example.com/${id}.png`, localDataUrl: '' });
+
+  it('shows only the active photo', () => {
+    const html = renderSignature({ ...stateFor('tech', { photos: [img('a'), img('b')], activePhoto: 1 }) }, 'export');
+    const photos = Array.from(parse(html).querySelectorAll('img[alt^="Photo of"]')).map((i) => i.getAttribute('src'));
+    expect(photos).toEqual(['https://cdn.example.com/b.png']);
+  });
+
+  it('shows every logo in every template', () => {
+    for (const id of TEMPLATE_IDS) {
+      for (const alignment of ['left', 'center'] as const) {
+        const s = stateFor(id, { logos: [img('l1'), img('l2')] });
+        const html = renderSignature({ ...s, design: { ...s.design, alignment } }, 'export');
+        const srcs = Array.from(parse(html).querySelectorAll('img[alt$="logo"]')).map((i) => i.getAttribute('src'));
+        expect(srcs, `${id} ${alignment}`).toEqual(['https://cdn.example.com/l1.png', 'https://cdn.example.com/l2.png']);
+      }
+    }
+  });
+});
+
+describe('icons', () => {
+  const withIcons = (linkIcons: boolean, template: TemplateId = 'tech') => {
+    const s = stateFor(template);
+    return renderSignature({ ...s, design: { ...s.design, linkIcons } }, 'export');
+  };
+
+  it('exports hosted icon images that link to each profile', () => {
+    for (const id of TEMPLATE_IDS) {
+      const doc = parse(withIcons(true, id));
+      const linkedin = doc.querySelector('a[href="https://www.linkedin.com/in/ada-moreau"] img');
+      expect(linkedin?.getAttribute('src')).toMatch(/^https:\/\/.+\/linkedin\.png$/);
+      expect(doc.querySelector('img[alt="Phone"]')).not.toBeNull();
+      expect(doc.body.textContent).toContain('ada.moreau@example.com');
+    }
+  });
+
+  it('can be turned off', () => {
+    expect(withIcons(false)).not.toContain('.png');
+    expect(parse(withIcons(false)).body.textContent).toContain('LinkedIn');
   });
 });
 

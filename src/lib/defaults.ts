@@ -14,8 +14,9 @@ export const SAMPLE_PROFILE: Profile = {
   address: '12 Rue de la Paix, 75002 Paris',
   ctaLabel: 'Book a 20-min call',
   ctaUrl: 'https://example.com/meet',
-  photo: { hostedUrl: '', localDataUrl: '' },
-  logo: { hostedUrl: '', localDataUrl: '' },
+  photos: [],
+  activePhoto: 0,
+  logos: [],
 };
 
 export const EMPTY_PROFILE: Profile = {
@@ -31,9 +32,18 @@ export const EMPTY_PROFILE: Profile = {
   address: '',
   ctaLabel: '',
   ctaUrl: '',
-  photo: { hostedUrl: '', localDataUrl: '' },
-  logo: { hostedUrl: '', localDataUrl: '' },
+  photos: [],
+  activePhoto: 0,
+  logos: [],
 };
+
+/**
+ * Public URL of this project's `public/` folder on GitHub. Recipients' mail apps
+ * load icons and auto-hosted images from here, so the files must be pushed.
+ * Change it if you fork or rename the repository.
+ */
+export const PUBLIC_REPO_BASE = 'https://raw.githubusercontent.com/Ghassen-kahia/Email-s_Signatures_App/main/public/';
+export const ICON_BASE_URL = `${PUBLIC_REPO_BASE}icons/`;
 
 /** Email-safe font stacks only — web fonts are not reliably supported in mail clients. */
 export const FONT_STACKS: Record<FontFamilyId, { label: string; stack: string }> = {
@@ -82,6 +92,7 @@ export const DEFAULT_DESIGN: Design = {
   photoSize: 80,
   photoRounded: true,
   showLinkLabels: true,
+  linkIcons: true,
 };
 
 export const DEFAULT_STATE: AppState = {

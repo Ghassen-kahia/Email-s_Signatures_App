@@ -1,6 +1,8 @@
 export type TemplateId = 'minimal' | 'tech' | 'corporate' | 'creative';
 
 export interface ImageAsset {
+  /** Stable key for lists. */
+  id: string;
   /** Public HTTPS URL used in the exported signature. */
   hostedUrl: string;
   /** Local data URL from an upload — used for the in-app preview only. Never transmitted. */
@@ -20,8 +22,11 @@ export interface Profile {
   address: string;
   ctaLabel: string;
   ctaUrl: string;
-  photo: ImageAsset;
-  logo: ImageAsset;
+  /** Uploaded photos; only the one at `activePhoto` is shown. */
+  photos: ImageAsset[];
+  activePhoto: number;
+  /** Logos are shown side by side. */
+  logos: ImageAsset[];
 }
 
 export type FontFamilyId = 'arial' | 'helvetica' | 'georgia' | 'verdana' | 'trebuchet' | 'tahoma';
@@ -43,6 +48,8 @@ export interface Design {
   photoSize: number;
   photoRounded: boolean;
   showLinkLabels: boolean;
+  /** Show small icons next to contact lines and as social buttons. */
+  linkIcons: boolean;
 }
 
 export interface ExportOptions {

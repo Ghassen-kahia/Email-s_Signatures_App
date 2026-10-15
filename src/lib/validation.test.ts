@@ -33,7 +33,7 @@ describe('validateProfile', () => {
   });
 
   it('requires hosted images to be https', () => {
-    const errors = validateProfile({ ...SAMPLE_PROFILE, photo: { hostedUrl: 'http://example.com/me.jpg', localDataUrl: '' } });
-    expect(errors['photo.hostedUrl']).toBeTruthy();
+    const errors = validateProfile({ ...SAMPLE_PROFILE, photos: [{ id: 'a', hostedUrl: 'http://example.com/me.jpg', localDataUrl: '' }] });
+    expect(errors['image.a']).toBeTruthy();
   });
 });

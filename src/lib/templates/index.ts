@@ -29,15 +29,17 @@ ${fragment}
 }
 
 export interface ImageExportStatus {
-  photo: ReturnType<typeof resolveImage>;
-  logo: ReturnType<typeof resolveImage>;
+  /** Images that only exist in this browser and are left out of the export. */
+  omitted: number;
+  /** Images embedded as base64 because the user opted in. */
+  embedded: number;
 }
 
-/** Report how each image will be handled in the export. */
+/** Report how the exported images (active photo + all logos) will be handled. */
 export function imageExportStatus(state: AppState): ImageExportStatus {
   const embed = state.exportOptions.embedLocalImages;
-  return {
-    photo: resolveImage(state.profile.photo, '', 'export', embed),
-    logo: resolveImage(state.profile.logo, '', 'export', embed),
-  };
+  const p = state.profile;
+  const active = p.photos[p.activePhoto] ?? p.photos[0];
+  const results = [...(active ? [active] : []), ...p.logos].map((img) => resolveImage(img, '', 'export', embed));
+  return { omitted: results.filter((r) => r.omittedLocal).length, embedded: results.filter((r) => r.embeddedLocal).length };
 }
