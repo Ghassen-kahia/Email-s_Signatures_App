@@ -1,7 +1,7 @@
 import type { AppState, ImageAsset } from '../types';
 import { DEFAULT_STATE } from './defaults';
 
-const STORAGE_KEY = 'signature-studio:v1';
+export const STORAGE_KEY = 'signature-studio:v1';
 
 type SavedImage = Partial<ImageAsset> | undefined;
 

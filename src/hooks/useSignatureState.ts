@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import type { AppState, Design, ExportOptions, Profile } from '../types';
 import { DEFAULT_STATE, EMPTY_PROFILE } from '../lib/defaults';
-import { clearState, loadState, saveState, type SaveResult } from '../lib/storage';
+import { STORAGE_KEY, clearState, loadState, saveState, type SaveResult } from '../lib/storage';
 
 /** App state with debounced, local-only persistence. */
 export function useSignatureState() {
@@ -18,6 +18,15 @@ export function useSignatureState() {
     const t = setTimeout(() => setSaveStatus(saveState(state)), 350);
     return () => clearTimeout(t);
   }, [state]);
+
+  // Another tab saved: adopt its state, so a stale tab never overwrites newer edits.
+  useEffect(() => {
+    const onStorage = (e: StorageEvent) => {
+      if (e.key === STORAGE_KEY && e.newValue) setState(loadState());
+    };
+    window.addEventListener('storage', onStorage);
+    return () => window.removeEventListener('storage', onStorage);
+  }, []);
 
   const updateProfile = useCallback((patch: Partial<Profile>) => setState((s) => ({ ...s, profile: { ...s.profile, ...patch } })), []);
   const updateDesign = useCallback((patch: Partial<Design>) => setState((s) => ({ ...s, design: { ...s.design, ...patch } })), []);

@@ -69,8 +69,10 @@ Turn on **Recipient view** in the preview to see exactly what gets exported.
 
 A signature is copied into every email you send. The recipient's mail app downloads each image from the URL written in the signature, so **an image on your computer can't be seen by anyone else**.
 
-- An uploaded image is shown in the preview only and is **left out of the export** until you provide a hosted URL.
-- To show your photo or logo to recipients, upload it somewhere public that you choose (your website, a CDN, a public cloud bucket) and paste its direct `https://` link into **Hosted image URL**.
+- **With `npm run dev`** uploads are saved to `public/hosted/` and get a public `raw.githubusercontent.com` link. Press **Publish to GitHub** to commit and push them (only `public/hosted/` is committed). GitHub can take about 5 minutes to serve a new file; the app rechecks automatically. Anything in a public repo is visible to anyone.
+- Otherwise an uploaded image is shown in the preview only and is **left out of the export** until you paste a hosted URL. Google Drive, Dropbox and GitHub share links are converted to direct image links automatically, and the app checks that the link loads.
+- You can add several photos (pick the one shown) and several logos (shown side by side).
+- Contact and social icons are white PNGs in `public/icons/`, coloured by the cell behind them, and loaded from this repository. Change `PUBLIC_REPO_BASE` in `src/lib/defaults.ts` if you fork or rename it.
 - There is also an opt-in **Embed uploaded images** option (base64). Gmail strips these, Outlook often turns them into attachments, and they easily exceed Gmail's 10,000-character signature limit. Use it only for Apple Mail or Thunderbird.
 
 ## Email compatibility
