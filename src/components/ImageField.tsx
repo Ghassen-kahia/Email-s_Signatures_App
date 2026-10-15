@@ -130,8 +130,8 @@ function ImageItem({ kind, item, selected, onSelect, onUpdate, onRemove, error, 
   const [converted, setConverted] = useState(false);
   const [hosting, setHosting] = useState(false);
   const [showUrl, setShowUrl] = useState(!item.localDataUrl);
-  const check = useHostedImageCheck(error ? '' : item.hostedUrl, checkVersion);
   const repoHosted = isRepoHosted(item.hostedUrl);
+  const check = useHostedImageCheck(error ? '' : item.hostedUrl, checkVersion, repoHosted);
   const preview = check.status === 'ok' ? item.hostedUrl : item.localDataUrl || item.hostedUrl;
 
   function handleUrl(raw: string) {
@@ -153,7 +153,7 @@ function ImageItem({ kind, item, selected, onSelect, onUpdate, onRemove, error, 
   let status: { tone: 'ok' | 'warn' | 'muted'; text: string };
   if (check.status === 'ok') status = { tone: 'ok', text: `✓ Public — recipients will see it (${check.width}×${check.height})${converted ? ', share link converted' : ''}` };
   else if (check.status === 'checking') status = { tone: 'muted', text: 'Checking the link…' };
-  else if (repoHosted) status = { tone: 'warn', text: 'Saved in your repo — press “Publish to GitHub” below to make it public.' };
+  else if (repoHosted) status = { tone: 'warn', text: 'Saved in your repo. Not public yet: press “Publish to GitHub” below. After publishing, GitHub can take about 5 minutes to serve new files; this rechecks automatically.' };
   else if (check.status === 'broken') status = { tone: 'warn', text: BROKEN_HINT };
   else if (item.localDataUrl) status = { tone: 'warn', text: 'Only on this device — recipients won’t see it yet.' };
   else status = { tone: 'muted', text: 'Paste a public image link below.' };
@@ -242,8 +242,17 @@ const BROKEN_HINT = 'This link doesn’t load as an image. Make sure it’s shar
 type HostedCheck = { status: 'idle' | 'checking' | 'broken' } | { status: 'ok'; width: number; height: number };
 
 /** Load the hosted URL the way a recipient's mail app would, to catch private or non-image links early. */
-function useHostedImageCheck(url: string, version: number): HostedCheck {
+function useHostedImageCheck(url: string, version: number, keepRetrying: boolean): HostedCheck {
   const [check, setCheck] = useState<HostedCheck>({ status: 'idle' });
+  const [attempt, setAttempt] = useState(0);
+
+  // Freshly published repo files 404 until GitHub's cache refreshes, so poll for ~10 minutes.
+  useEffect(() => {
+    if (!keepRetrying || check.status !== 'broken' || attempt >= 20) return;
+    const timer = setTimeout(() => setAttempt((a) => a + 1), 30_000);
+    return () => clearTimeout(timer);
+  }, [keepRetrying, check.status, attempt]);
+
   useEffect(() => {
     const src = url.trim();
     if (!isHttpsUrl(src)) {
@@ -258,12 +267,13 @@ function useHostedImageCheck(url: string, version: number): HostedCheck {
     img.onerror = () => !cancelled && setCheck({ status: 'broken' });
     // Debounce so typing a URL doesn't fire a request per keystroke; the version
     // query defeats the browser's cached 404 after publishing.
-    const timer = setTimeout(() => (img.src = version ? `${src}${src.includes('?') ? '&' : '?'}v=${version}` : src), 400);
+    const bust = version || attempt ? `${src.includes('?') ? '&' : '?'}v=${version}-${attempt}` : '';
+    const timer = setTimeout(() => (img.src = src + bust), 400);
     return () => {
       cancelled = true;
       clearTimeout(timer);
       img.src = '';
     };
-  }, [url, version]);
+  }, [url, version, attempt]);
   return check;
 }

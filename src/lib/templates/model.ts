@@ -85,6 +85,10 @@ export interface ImageResolution {
 
 export function resolveImage(asset: ImageAsset, alt: string, mode: RenderMode, embedLocal: boolean): ImageResolution {
   const hosted = asset.hostedUrl.trim();
+  // The preview shows the local copy when there is one, so it works before the hosted file is published.
+  if (mode === 'preview' && asset.localDataUrl) {
+    return { ref: { src: escapeHtml(asset.localDataUrl), alt }, omittedLocal: false, embeddedLocal: false };
+  }
   if (hosted && isHttpsUrl(hosted)) {
     return { ref: { src: escapeHtml(hosted), alt }, omittedLocal: false, embeddedLocal: false };
   }
